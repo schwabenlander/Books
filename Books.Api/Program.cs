@@ -1,4 +1,5 @@
 using Books.Api.Contexts;
+using Books.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -7,6 +8,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<BooksContext>(options => 
     options.UseSqlServer(builder.Configuration.GetConnectionString("BooksDBConnectionString")));
 builder.Services.AddControllers();
+
+builder.Services.AddScoped<IBooksRepository, BooksRepository>();
 
 var app = builder.Build();
 
