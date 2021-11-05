@@ -11,6 +11,8 @@ namespace Books.Api.Profiles
             CreateMap<Book, BookModel>()
                 .ForMember(dest => dest.Author, opt => 
                     opt.MapFrom(src => $"{src.Author.FirstName} {src.Author.LastName}"));
+
+            CreateMap<CreateBookModel, Book>();
         }
     }
 }
