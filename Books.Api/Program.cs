@@ -8,16 +8,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<BooksContext>(options => 
     options.UseSqlServer(builder.Configuration.GetConnectionString("BooksDBConnectionString")));
 builder.Services.AddControllers();
-
 builder.Services.AddScoped<IBooksRepository, BooksRepository>();
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
