@@ -27,11 +27,13 @@ public class BooksController : Controller
     [HttpGet]
     [Route("{id}", Name = "GetBook")]
     [BookResultFilter]
-    public async Task<IActionResult> GetBookByIdAsync(Guid id)
+    public async Task<IActionResult> GetBookAsync(Guid id)
     {
         Book book = await _booksRepository.GetBookAsync(id);
 
         if (book is null) return NotFound();
+
+        var bookCovers = await _booksRepository.GetBookCoversAsync(id);
 
         return Ok(book);
     }

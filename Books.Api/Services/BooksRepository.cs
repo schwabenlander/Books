@@ -1,6 +1,8 @@
 ﻿using Books.Api.Contexts;
 using Books.Api.Entities;
+using Books.Api.ExternalModels;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace Books.Api.Services;
 
@@ -9,10 +11,12 @@ namespace Books.Api.Services;
 public class BooksRepository : IBooksRepository
 {
     private BooksContext _context;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public BooksRepository(BooksContext context)
+    public BooksRepository(BooksContext context, IHttpClientFactory httpClientFactory)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        this._httpClientFactory = httpClientFactory;
     }
 
     public void AddBook(Book book)
@@ -47,5 +51,51 @@ public class BooksRepository : IBooksRepository
     {
         return await _context.Books.Where(_ => bookIds.Contains(_.Id))
             .Include(_ => _.Author).ToListAsync();
+    }
+
+    public async Task<BookCover> GetBookCoverAsync(string coverId)
+    {
+        var httpClient = _httpClientFactory.CreateClient();
+
+        var response = await httpClient.GetAsync($"https://localhost:7140/api/bookcovers/{coverId}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            return JsonSerializer.Deserialize<BookCover>(
+                await response.Content.ReadAsStringAsync(), 
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+
+        return null;
+    }
+
+    public async Task<IEnumerable<BookCover>> GetBookCoversAsync(Guid bookId)
+    {
+        var httpClient = _httpClientFactory.CreateClient();
+        List<BookCover> bookCovers = new();
+
+        // create a list of fake book covers
+        var bookCoverUrls = new[]
+        {
+            $"https://localhost:7140/api/bookcovers/{bookId}-dummycover1",
+            $"https://localhost:7140/api/bookcovers/{bookId}-dummycover2",
+            $"https://localhost:7140/api/bookcovers/{bookId}-dummycover3",
+            $"https://localhost:7140/api/bookcovers/{bookId}-dummycover4",
+            $"https://localhost:7140/api/bookcovers/{bookId}-dummycover5"
+        };
+
+        foreach (var bookCoverUrl in bookCoverUrls)
+        {
+            var response = await httpClient.GetAsync(bookCoverUrl);
+
+            if (response.IsSuccessStatusCode)
+            {
+                bookCovers.Add(JsonSerializer.Deserialize<BookCover>(
+                    await response.Content.ReadAsStringAsync(),
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
+            }
+        }
+
+        return bookCovers;
     }
 }
