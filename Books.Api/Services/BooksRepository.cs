@@ -8,15 +8,20 @@ namespace Books.Api.Services;
 
 #nullable disable
 
-public class BooksRepository : IBooksRepository
+public class BooksRepository : IBooksRepository, IDisposable
 {
     private BooksContext _context;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<BooksRepository> _logger;
+    private CancellationTokenSource _cancellationTokenSource;
 
-    public BooksRepository(BooksContext context, IHttpClientFactory httpClientFactory)
+    public BooksRepository(BooksContext context, 
+        IHttpClientFactory httpClientFactory, 
+        ILogger<BooksRepository> logger)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
-        this._httpClientFactory = httpClientFactory;
+        _httpClientFactory = httpClientFactory;
+        _logger = logger;
     }
 
     public void AddBook(Book book)
@@ -70,14 +75,28 @@ public class BooksRepository : IBooksRepository
     }
 
     public async Task<BookCover> DownloadBookCoverAsync(HttpClient httpClient,
-        string bookCoverUrl)
+        string bookCoverUrl, CancellationToken cancellationToken)
     {
-        return await httpClient.GetFromJsonAsync<BookCover>(bookCoverUrl,
+        var response = await httpClient.GetAsync(bookCoverUrl, cancellationToken);
+
+        if (response.IsSuccessStatusCode)
+        {
+            var bookCover = JsonSerializer.Deserialize<BookCover>(
+                await response.Content.ReadAsStringAsync(),
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            return bookCover;
+        }
+        else
+        {
+            _cancellationTokenSource.Cancel();
+            return null;
+        }
     }
 
     public async Task<IEnumerable<BookCover>> GetBookCoversAsync(Guid bookId)
     {
+        _cancellationTokenSource = new CancellationTokenSource();
         var httpClient = _httpClientFactory.CreateClient();
         List<BookCover> bookCovers = new();
 
@@ -91,8 +110,33 @@ public class BooksRepository : IBooksRepository
             $"https://localhost:7140/api/bookcovers/{bookId}-dummycover5"
         };
 
-        var downloadBookCoverTasks = bookCoverUrls.Select(url => DownloadBookCoverAsync(httpClient, url)).ToList();
+        var downloadBookCoverTasks = bookCoverUrls
+            .Select(url => DownloadBookCoverAsync(httpClient, url, _cancellationTokenSource.Token))
+            .ToList();
 
-        return await Task.WhenAll(downloadBookCoverTasks);
+        try
+        {
+            return await Task.WhenAll(downloadBookCoverTasks);
+        }
+        catch (OperationCanceledException ex)
+        {
+            _logger.LogError($"{ex.Message}");
+
+            foreach (var task in downloadBookCoverTasks)
+            {
+                _logger.LogInformation($"Task {task.Id} has the status {task.Status}");
+            }
+
+            return new List<BookCover>();
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_cancellationTokenSource != null)
+        {
+            _cancellationTokenSource.Dispose();
+            _cancellationTokenSource = null;
+        }
     }
 }
