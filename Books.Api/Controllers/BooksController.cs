@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Books.Api.Entities;
+using Books.Api.ExternalModels;
 using Books.Api.Filters;
 using Books.Api.Models;
 using Books.Api.Services;
@@ -26,16 +27,16 @@ public class BooksController : Controller
 
     [HttpGet]
     [Route("{id}", Name = "GetBook")]
-    [BookResultFilter]
+    [BookWithCoversResultFilter]
     public async Task<IActionResult> GetBookAsync(Guid id)
     {
-        Book book = await _booksRepository.GetBookAsync(id);
+        Book bookEntity = await _booksRepository.GetBookAsync(id);
 
-        if (book is null) return NotFound();
+        if (bookEntity is null) return NotFound();
 
         var bookCovers = await _booksRepository.GetBookCoversAsync(id);
 
-        return Ok(book);
+        return Ok((bookEntity, bookCovers));
     }
 
     [HttpPost]

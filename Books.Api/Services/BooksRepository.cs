@@ -69,6 +69,13 @@ public class BooksRepository : IBooksRepository
         return null;
     }
 
+    public async Task<BookCover> DownloadBookCoverAsync(HttpClient httpClient,
+        string bookCoverUrl)
+    {
+        return await httpClient.GetFromJsonAsync<BookCover>(bookCoverUrl,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+    }
+
     public async Task<IEnumerable<BookCover>> GetBookCoversAsync(Guid bookId)
     {
         var httpClient = _httpClientFactory.CreateClient();
@@ -84,18 +91,8 @@ public class BooksRepository : IBooksRepository
             $"https://localhost:7140/api/bookcovers/{bookId}-dummycover5"
         };
 
-        foreach (var bookCoverUrl in bookCoverUrls)
-        {
-            var response = await httpClient.GetAsync(bookCoverUrl);
+        var downloadBookCoverTasks = bookCoverUrls.Select(url => DownloadBookCoverAsync(httpClient, url)).ToList();
 
-            if (response.IsSuccessStatusCode)
-            {
-                bookCovers.Add(JsonSerializer.Deserialize<BookCover>(
-                    await response.Content.ReadAsStringAsync(),
-                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
-            }
-        }
-
-        return bookCovers;
+        return await Task.WhenAll(downloadBookCoverTasks);
     }
 }
