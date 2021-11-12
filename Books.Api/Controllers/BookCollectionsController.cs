@@ -11,7 +11,7 @@ namespace Books.Api.Controllers
     [ApiController]
     [Route("api/bookcollections")]
     [BooksResultFilter]
-    public class BookCollectionsController : Controller
+    public class BookCollectionsController : ControllerBase
     {
         private readonly IBooksRepository _booksRepository;
         private readonly IMapper _mapper;

@@ -10,7 +10,7 @@ namespace Books.Api.Services;
 
 public class BooksRepository : IBooksRepository, IDisposable
 {
-    private BooksContext _context;
+    private readonly BooksContext _context;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<BooksRepository> _logger;
     private CancellationTokenSource _cancellationTokenSource;

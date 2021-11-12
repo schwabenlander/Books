@@ -13,7 +13,7 @@ public class BookCoversController : ControllerBase
         // return an Internal Server Error
         if (returnFault)
         {
-            await Task.Delay(100);
+            await Task.Delay(1000);
             return new StatusCodeResult(500);
         }
 

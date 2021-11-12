@@ -12,6 +12,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IBooksRepository, BooksRepository>();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
+// Build the WebApplication
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

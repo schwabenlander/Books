@@ -10,7 +10,7 @@ namespace Books.Api.Controllers;
 
 [ApiController]
 [Route("api/books")]
-public class BooksController : Controller
+public class BooksController : ControllerBase
 {
     private readonly IBooksRepository _booksRepository;
     private readonly IMapper _mapper;
